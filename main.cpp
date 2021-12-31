@@ -14,8 +14,9 @@ using namespace std;
 
 vector<string> dividirEspacios(string text);
 bool IsParenthesesOrDash(char c);
-int cuenta(vector<string> vec, string str);
+double tf(vector<string> vec, string str);
 double idf(int n, int df);
+double tfidf(double tf, double idf);
 vector<pair<string, int>> cuentaTotal(vector<vector<string>> solucion, vector<string> palabras);
 
 int main(int argc, char *argv[]) {
@@ -47,12 +48,13 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  // Se calcula el TF de cada palabra de los documentos
   for (int i = 0; i < solucion.size(); i++) {
-    int aux;
+    double aux;
     vector<vector<string>> aux2;
     for (int j = 0; j < solucion[i].size(); j++) {
       if (solucion[i][j] !=  " ") {
-        aux = cuenta(solucion[i], solucion[i][j]);
+        aux = tf(solucion[i], solucion[i][j]);
         vector<string> aux3;
         aux3.push_back(solucion[i][j]);
         aux3.push_back(to_string(aux));
@@ -61,7 +63,7 @@ int main(int argc, char *argv[]) {
     }
     ocurrenciaPalabras.push_back(aux2);
   }
-
+  
   // Vector que almacena todo el texto de todos los documentos juntos
   vector<string> texto;
   for (int i = 0; i < solucion.size()-1; i++) {
@@ -73,7 +75,7 @@ int main(int argc, char *argv[]) {
   auto last = std::unique(texto.begin(), texto.end());
   texto.resize(std::distance(texto.begin(), last));
 
-  // Par que almacena el IDF de cada palabra de toda la colección de documentos
+  // Vector de pares que almacena el IDF de cada palabra de toda la colección de documentos
   vector<pair<string, string>> resultado;
   for (int i = 0; i < cuentaTotal(solucion, texto).size(); i++ ) {
     pair<string, string> aux;
@@ -82,6 +84,7 @@ int main(int argc, char *argv[]) {
     resultado.push_back(aux);
   }
   
+  // Se almacenan en el mismo vector el término, idf y tf
   for (int k = 0; k < resultado.size(); k++) {
     for (int i = 0; i < ocurrenciaPalabras.size(); i++) {
       for (int j = 0; j < ocurrenciaPalabras[i].size(); j++) {
@@ -91,19 +94,14 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-
+  // Se añade al vector de resultados tf-idf
   for (int i = 0; i < ocurrenciaPalabras.size(); i++) {
     for (int j = 0; j < ocurrenciaPalabras[i].size(); j++) {
-      double aux7;
-      double oper1 = stod(ocurrenciaPalabras[i][j][1]);
-      double oper2 = stod(ocurrenciaPalabras[i][j][2]);
-
-      aux7 = oper1 * oper2;
-      string str1 = to_string(aux7);
-      ocurrenciaPalabras[i][j].push_back(str1);
+      ocurrenciaPalabras[i][j].push_back(to_string(tfidf(stod(ocurrenciaPalabras[i][j][1]), stod(ocurrenciaPalabras[i][j][2]))));
     }
   }
 
+  // Impresión por fichero del resultado
   fstream file_out;
 
   file_out.open(filename2, std::ios_base::out);
@@ -112,10 +110,10 @@ int main(int argc, char *argv[]) {
   } else {
       for (size_t i = 0; i < ocurrenciaPalabras.size(); i++) {
         file_out << "DOCUMENTO " << i+1 << endl;
-        file_out << "   Término   TF  IDF        TF-IDF" << endl;
-        file_out << "----------------------------------" << endl;
+        file_out << "   Término   TF         IDF        TF-IDF     Índice" << endl;
+        file_out << "----------------------------------------------------" << endl;
           for (size_t j = 0; j < ocurrenciaPalabras[i].size(); j++) {
-              file_out << setw(10) << setfill(' ') << ocurrenciaPalabras[i][j][0] << "   " << ocurrenciaPalabras[i][j][1] << "   " << ocurrenciaPalabras[i][j][2] << "   " << ocurrenciaPalabras[i][j][3] <<endl;
+              file_out << setw(10) << setfill(' ') << ocurrenciaPalabras[i][j][0] << "   " << ocurrenciaPalabras[i][j][1] << "   " << ocurrenciaPalabras[i][j][2] << "   " << ocurrenciaPalabras[i][j][ocurrenciaPalabras[i][j].size()-1] << "   " << j <<endl;
           }
           file_out << endl;
       }   
@@ -124,6 +122,25 @@ int main(int argc, char *argv[]) {
 
   input_file.close();
   return EXIT_SUCCESS;
+}
+
+double tf(vector<string> vec, string str) {
+  int x = 0;
+  for (int i = 0; i < vec.size(); i++) {
+    if (vec[i] == str) {
+      x++;
+    }
+  }
+  return x;
+}
+
+double idf(int n, int df) {
+  double param = n / df;
+  return log10(param);
+}
+
+double tfidf(double tf, double idf) {
+  return tf*idf;
 }
 
 vector<pair<string, int>> cuentaTotal(vector<vector<string>> solucion, vector<string> texto) {
@@ -154,20 +171,6 @@ vector<pair<string, int>> cuentaTotal(vector<vector<string>> solucion, vector<st
   return unir;
 }
 
-double idf(int n, int df) {
-  double param = n / df;
-  return log10(param);
-}
-
-int cuenta(vector<string> vec, string str) {
-  int x = 0;
-  for (int i = 0; i < vec.size(); i++) {
-    if (vec[i] == str) {
-      x++;
-    }
-  }
-  return x;
-}
 
 bool IsParenthesesOrDash(char c) {
     switch(c)
